@@ -12,14 +12,14 @@ import logging
 import json
 import execjs
 
-session = requests.session()
+# session = requests.session()
 logging.basicConfig(level=logging.INFO)
 
 
-class Login_CMCC(object):
-    def __init__(self):
-        self.session = session
-        self.session.cookie = cookiejar.LWPCookieJar('cookie.txt')
+class LoginCMCC(object):
+    def __init__(self, my_session):
+        self.session = my_session
+        # self.session.cookie = cookiejar.LWPCookieJar('cookie.txt')
 
     def _check_need_verify(self, phone_num):
         _check_need_verify_url = 'https://login.10086.cn/needVerifyCode.htm'
@@ -142,6 +142,26 @@ class Login_CMCC(object):
                                                   _post_login_resp.text))
         return _post_login_resp.text
 
+    def _get_Artifact(self, last_resp):
+        artitact = json.loads(last_resp)['artifact']
+        _get_Artifact_url = 'http://shop.10086.cn/i/v1/auth/getArtifact'
+        query_string = {
+            'backUrl': 'http://shop.10086.cn/i/?f=billdetailqry',
+            'artifact': artitact,
+        }
+        Headers = {
+            'Host': 'shop.10086.cn',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/66.0.3359.139 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+        }
+        _get_Artifact_resp = self.session.get(url=_get_Artifact_url, params=query_string, headers=Headers)
+        logging.info('_get_Artifact_resp: %s' % (_get_Artifact_resp.status_code,))
+
     def login(self):
         phone_num = input('请输入手机号:')
         server_pwd = input('请输入服务密码:')
@@ -149,9 +169,12 @@ class Login_CMCC(object):
         self._chkNumberAction(phone_num)
         smsCode = self._sendRandomCodeAction(phone_num)
         server_pwd_encrypt = self._get_pwd(server_pwd)
-        self._post_login(phone_num, server_pwd_encrypt, smsCode)
+        resp_L = self._post_login(phone_num, server_pwd_encrypt, smsCode)
+        self._get_Artifact(resp_L)
+        return phone_num, server_pwd, self.session
 
 
 if __name__ == '__main__':
-    user = Login_CMCC()
+    my_session = requests.session()
+    user = LoginCMCC(my_session)
     user.login()

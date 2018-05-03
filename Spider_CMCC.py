@@ -14,19 +14,19 @@ import time
 import json
 import base64
 
-session = requests.session()
+# session = requests.session()
 logging.basicConfig(level=logging.INFO)
 
 
 class Spider(object):
-    def __init__(self):
-        self.session = session
-        self.session.cookies = cookiejar.LWPCookieJar('cookies.txt')
+    def __init__(self, my_session):
+        self.session = my_session
+        # self.session.cookies = cookiejar.LWPCookieJar('cookies.txt')
 
     def _get_authImag(self):
         _get_authImage_url = 'http://shop.10086.cn/i/authImg'
         query_string = {
-            't': int(random.random() * 10000000000000000)/10000000000000000,
+            't': int(random.random() * 10000000000000000) / 10000000000000000,
         }
         Headers = {
             'Host': 'shop.10086.cn',
@@ -120,3 +120,40 @@ class Spider(object):
         }
         _get_tempident_resp = self.session.get(url=_get_tempident_url, params=query_string, headers=Headers)
         logging.info('_get_tempident_resp: %s' % _get_tempident_resp.text)
+
+    def _get_detialBill(self, phone_num):
+        _get_detialBill_url = 'https://shop.10086.cn/i/v1/fee/detailbillinfojsonp/{0}'.format(phone_num)
+        query_string = {
+            'callback': 'jQuery1830' + str(int(random.random() * 100000000000000000)),
+            'curCuror': '1',
+            'step': '100',
+            'qryMonth': '201804',
+            'billType': '01',
+            '_': int(time.time() * 1000),
+        }
+        Headers = {
+            'Host': 'shop.10086.cn',
+            'Connection': 'keep-alive',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/66.0.3359.139 Safari/537.36',
+            'Accept': '*/*',
+            'Referer': 'http://shop.10086.cn/i/?f=billdetailqry&welcome=1525251281507',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+        }
+        _get_detialBill_resp = self.session.get(url=_get_detialBill_url, params=query_string, headers=Headers)
+        logging.info('_get_detialBill_resp: %s' % _get_detialBill_resp.text)
+        return _get_detialBill_resp.text
+
+    def get_parse(self, phone_num, pwd):
+        captcha = self._get_authImag()
+        self._get_percheck(phone_num, captcha)
+        smsCode = self._get_Randomcode(phone_num)
+        self._get_tempident(phone_num, pwd, smsCode, captcha)
+        print(self._get_detialBill(phone_num))
+
+
+if __name__ == '__main__':
+    my_session = requests.session()
+    get_spider = Spider(my_session)
+    get_spider.get_parse('13554xxxxxx', '027xxx')

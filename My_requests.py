@@ -9,8 +9,9 @@ import requests
 from http import cookiejar
 
 
-class My_requests(object):
+class MyRequests(object):
     def get_requests(self):
         session = requests.session()
         session.cookies = cookiejar.LWPCookieJar('cookies.txt')
         return session
+
