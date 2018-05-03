@@ -13,6 +13,7 @@ import logging
 import time
 import json
 import base64
+import re
 
 # session = requests.session()
 logging.basicConfig(level=logging.INFO)
@@ -120,15 +121,18 @@ class Spider(object):
         }
         _get_tempident_resp = self.session.get(url=_get_tempident_url, params=query_string, headers=Headers)
         logging.info('_get_tempident_resp: %s' % _get_tempident_resp.text)
+        return json.loads(re.findall(r'{.*?}', _get_tempident_resp.text)[0])['retMsg']
 
     def _get_detialBill(self, phone_num):
+        billtype = input('请输入要查询的详单类型（01：电话 02：短信 03：流量 04：余额）：')
+        month = input('请输入要查询的月份（近六个月，格式如：201804）：')
         _get_detialBill_url = 'https://shop.10086.cn/i/v1/fee/detailbillinfojsonp/{0}'.format(phone_num)
         query_string = {
             'callback': 'jQuery1830' + str(int(random.random() * 100000000000000000)),
             'curCuror': '1',
             'step': '100',
-            'qryMonth': '201804',
-            'billType': '01',
+            'qryMonth': month,
+            'billType': billtype,
             '_': int(time.time() * 1000),
         }
         Headers = {
@@ -146,11 +150,23 @@ class Spider(object):
         return _get_detialBill_resp.text
 
     def get_parse(self, phone_num, pwd):
-        captcha = self._get_authImag()
-        self._get_percheck(phone_num, captcha)
-        smsCode = self._get_Randomcode(phone_num)
-        self._get_tempident(phone_num, pwd, smsCode, captcha)
-        print(self._get_detialBill(phone_num))
+        while True:
+            smsCode = self._get_Randomcode(phone_num)
+            while True:
+                captcha = self._get_authImag()
+                ret = self._get_percheck(phone_num, captcha)
+                if ret == '输入正确，校验成功':
+                    break
+                else:
+                    print('验证码校验失败，请重新输入')
+            ret_code = self._get_tempident(phone_num, pwd, smsCode, captcha)
+            if ret_code == '认证成功!':
+                break
+        while True:
+            print(self._get_detialBill(phone_num))
+            jx = input('是否还要继续查询（y/n）：').strip()
+            if jx.lower() != 'y':
+                break
 
 
 if __name__ == '__main__':

@@ -165,10 +165,14 @@ class LoginCMCC(object):
     def login(self):
         phone_num = input('请输入手机号:')
         server_pwd = input('请输入服务密码:')
-        self._check_need_verify(phone_num)
-        self._chkNumberAction(phone_num)
-        smsCode = self._sendRandomCodeAction(phone_num)
-        server_pwd_encrypt = self._get_pwd(server_pwd)
+        verify = self._check_need_verify(phone_num)
+        if verify == '1':
+            self._chkNumberAction(phone_num)
+            smsCode = self._sendRandomCodeAction(phone_num)
+            server_pwd_encrypt = self._get_pwd(server_pwd)
+        else:
+            server_pwd_encrypt = self._get_pwd(server_pwd)
+            smsCode = ''
         resp_L = self._post_login(phone_num, server_pwd_encrypt, smsCode)
         self._get_Artifact(resp_L)
         return phone_num, server_pwd, self.session
