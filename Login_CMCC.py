@@ -140,14 +140,14 @@ class LoginCMCC(object):
         _post_login_resp = self.session.get(url=_post_login_url, params=query_string, headers=Headers)
         logging.info('_post_login_resp: %s %s' % (_post_login_resp.status_code,
                                                   _post_login_resp.text))
-        return _post_login_resp.text
+        return json.loads(_post_login_resp.text)
 
     def _get_Artifact(self, last_resp):
-        artitact = json.loads(last_resp)['artifact']
+        # artitact = json.loads(last_resp)['artifact']
         _get_Artifact_url = 'http://shop.10086.cn/i/v1/auth/getArtifact'
         query_string = {
             'backUrl': 'http://shop.10086.cn/i/?f=billdetailqry',
-            'artifact': artitact,
+            'artifact': last_resp,
         }
         Headers = {
             'Host': 'shop.10086.cn',
@@ -163,18 +163,23 @@ class LoginCMCC(object):
         logging.info('_get_Artifact_resp: %s' % (_get_Artifact_resp.status_code,))
 
     def login(self):
-        phone_num = input('请输入手机号:')
-        server_pwd = input('请输入服务密码:')
-        verify = self._check_need_verify(phone_num)
-        if verify == '1':
-            self._chkNumberAction(phone_num)
-            smsCode = self._sendRandomCodeAction(phone_num)
-            server_pwd_encrypt = self._get_pwd(server_pwd)
-        else:
-            server_pwd_encrypt = self._get_pwd(server_pwd)
-            smsCode = ''
-        resp_L = self._post_login(phone_num, server_pwd_encrypt, smsCode)
-        self._get_Artifact(resp_L)
+        while True:
+            phone_num = input('请输入手机号:')
+            server_pwd = input('请输入服务密码:')
+            verify = self._check_need_verify(phone_num)
+            if verify == '1':
+                self._chkNumberAction(phone_num)
+                smsCode = self._sendRandomCodeAction(phone_num)
+                server_pwd_encrypt = self._get_pwd(server_pwd)
+            else:
+                server_pwd_encrypt = self._get_pwd(server_pwd)
+                smsCode = ''
+            resp_L = self._post_login(phone_num, server_pwd_encrypt, smsCode)
+            if resp_L['desc'] == '认证成功':
+                break
+            else:
+                print(resp_L['desc'], '请重新输入')
+        self._get_Artifact(resp_L['artifact'])
         return phone_num, server_pwd, self.session
 
 

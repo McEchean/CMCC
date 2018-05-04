@@ -1,0 +1,2 @@
+#LWP-Cookies-2.0
+Set-Cookie3: verifyCode=88060e20eb6d11cf9a233a04ad177c72f080664f; path="/"; domain=".10086.cn"; path_spec; domain_dot; expires="2018-06-03 02:06:47Z"; version=0
